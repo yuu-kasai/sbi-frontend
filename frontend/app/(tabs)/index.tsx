@@ -550,9 +550,9 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>経路検索</Text>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="menu-outline" size={24} color="#007AFF" />
-          </TouchableOpacity>
+          
+            
+          
         </View>
 
         <ScrollView contentContainerStyle={styles.container}>
@@ -663,9 +663,8 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>経路検索</Text>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="menu-outline" size={24} color="#007AFF" />
-          </TouchableOpacity>
+          
+      
         </View>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.card}>
@@ -774,7 +773,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     padding: 16,
     backgroundColor: "white",
@@ -785,9 +784,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
-  headerButton: {
-    padding: 8,
-  },
+  
   card: {
     backgroundColor: "white",
     borderRadius: 8,
