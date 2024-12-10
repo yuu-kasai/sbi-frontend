@@ -476,38 +476,16 @@ export default function HomeScreen() {
     if (Platform.OS === "web") {
       return (
         <View style={styles.inputWrapper}>
-          <View style={styles.timeButton}>
-            <Ionicons
-              name="time-outline"
-              size={20}
-              color="#666"
-              style={styles.timeicon}
-            />
-            <View style={styles.timePickerContainer}>
-              <View style={styles.time}>
-                <CustomTimePicker
-                  onClose={() => setShowTimePicker(false)}
-                  isVisible={showTimePicker}
-                  type="hour"
-                  initialTime={date}
-                  onSelectTime={(newDate) => {
-                    setDate(newDate);
-                  }}
-                />
-              </View>
-              <View style={styles.minutes}>
-                <CustomTimePicker
-                  onClose={() => setShowTimePicker(false)}
-                  isVisible={showTimePicker}
-                  type="minute"
-                  initialTime={date}
-                  onSelectTime={(newDate) => {
-                    setDate(newDate);
-                  }}
-                />
-              </View>
-            </View>
-          </View>
+        
+          <CustomTimePicker
+            onClose={() => setShowTimePicker(false)}
+            isVisible={showTimePicker}
+            type="hour" // この値は実際には使用しませんが、型定義のために必要
+            initialTime={date}
+            onSelectTime={(newDate) => {
+              setDate(newDate);
+            }}
+          />
         </View>
       );
     } else {
@@ -543,16 +521,13 @@ export default function HomeScreen() {
       );
     }
   };
-  const placeholderColor = "rgba(102, 102, 102, 0.6)"; 
+  const placeholderColor = "rgba(102, 102, 102, 0.6)";
 
   if (Platform.OS === "web") {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>経路検索</Text>
-          
-            
-          
         </View>
 
         <ScrollView contentContainerStyle={styles.container}>
@@ -565,11 +540,7 @@ export default function HomeScreen() {
                     isDepartureFocused && styles.focusedInput,
                   ]}
                 >
-                  <Ionicons
-                    name="location-outline"
-                    size={20}
-                    color={"#666"}
-                  />
+                  <Ionicons name="location-outline" size={20} color={"#666"} />
                   <TextInput
                     style={styles.input}
                     placeholder="出発地を入力"
@@ -600,11 +571,7 @@ export default function HomeScreen() {
                     isArrivalFocused && styles.focusedInput,
                   ]}
                 >
-                  <Ionicons
-                    name="flag-outline"
-                    size={20}
-                    color={"#666"}
-                  />
+                  <Ionicons name="flag-outline" size={20} color={"#666"} />
                   <TextInput
                     style={styles.input}
                     placeholder="到着地を入力"
@@ -663,8 +630,6 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>経路検索</Text>
-          
-      
         </View>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.card}>
@@ -674,11 +639,7 @@ export default function HomeScreen() {
                 isDepartureFocused && styles.focusedInput,
               ]}
             >
-              <Ionicons
-                name="location-outline"
-                size={20}
-                color={"#666"}
-              />
+              <Ionicons name="location-outline" size={20} color={"#666"} />
               <TextInput
                 style={styles.input}
                 placeholder="出発地を入力"
@@ -703,11 +664,7 @@ export default function HomeScreen() {
                 isArrivalFocused && styles.focusedInput,
               ]}
             >
-              <Ionicons
-                name="flag-outline"
-                size={20}
-                color={"#666"}
-              />
+              <Ionicons name="flag-outline" size={20} color={"#666"} />
               <TextInput
                 style={styles.input}
                 placeholder="到着地を入力"
@@ -784,7 +741,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
-  
+
   card: {
     backgroundColor: "white",
     borderRadius: 8,
@@ -857,7 +814,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 4,
     height: 40,
-    color: '#333333',
+    color: "#333333",
     ...(Platform.OS === "web" && {
       outlineStyle: "none",
     }),
@@ -889,14 +846,19 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 4,
     height: 40,
-    paddingLeft: 8,
-    ...(Platform.OS === "web" && {
-      paddingVertical: 8,
-    }),
+    width: "100%", 
+    backgroundColor: "white",
   },
   timePickerContainer: {
     flexDirection: "row",
     flex: 1,
+  },
+  timePickerWrapper: {
+    flex: 1,
+    ...(Platform.OS === "web" && {
+      flex: 1,
+      maxWidth: "45%",
+    }),
   },
   button: {
     backgroundColor: "#007AFF",

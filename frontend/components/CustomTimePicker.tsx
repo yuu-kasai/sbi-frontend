@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Platform,
   StyleSheet,
@@ -8,20 +8,19 @@ import {
   Modal,
   FlatList,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import { Clock } from 'lucide-react';
 
 interface CustomTimePickerProps {
   isVisible: boolean;
   onClose: () => void;
-  type: "hour" | "minute";
   onSelectTime: (date: Date) => void;
   initialTime: Date;
+  type: "hour" | "minute";
 }
 
 const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
   isVisible,
   onClose,
-  type,
   onSelectTime,
   initialTime,
 }) => {
@@ -30,12 +29,9 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
     initialTime.getMinutes()
   );
 
-  const values = Array.from({ length: type === "hour" ? 24 : 60 }, (_, i) => i);
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
-  const currentValue =
-    type === "hour" ? initialTime.getHours() : initialTime.getMinutes();
   const renderItem = ({
     item,
     type,
@@ -66,30 +62,57 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
     onClose();
   };
 
-  const handleChange = (value: number) => {
-    const newDate = new Date(initialTime);
-    if (type === "hour") {
-      newDate.setHours(value);
-    } else {
-      newDate.setMinutes(value);
-    }
-    onSelectTime(newDate);
-  };
+  useEffect(() => {
+    setSelectedHour(initialTime.getHours());
+    setSelectedMinute(initialTime.getMinutes());
+  }, [initialTime]);
+
 
   if (Platform.OS === "web") {
     return (
-      <select
-        value={currentValue}
-        onChange={(e) => handleChange(Number(e.target.value))}
-        style={webStyles.select}
-      >
-        {values.map((value) => (
-          <option key={value} value={value}>
-            {value.toString().padStart(2, "0")}
-            {type === "hour" ? "時" : "分"}
-          </option>
-        ))}
-      </select>
+      <div style={webStyles.container}>
+        <div style={webStyles.leftSection}>
+          <Clock style={webStyles.icon} />
+          <div style={webStyles.separator} />
+          <select
+            value={selectedHour}
+            onChange={(e) => {
+              const newHour = Number(e.target.value);
+              setSelectedHour(newHour);
+              const newDate = new Date(initialTime);
+              newDate.setHours(newHour, selectedMinute);
+              onSelectTime(newDate);
+            }}
+            style={webStyles.select}
+          >
+            {Array.from({ length: 24 }, (_, i) => (
+              <option key={i} value={i}>
+                {i.toString().padStart(2, "0")}時
+              </option>
+            ))}
+          </select>
+        </div>
+        <div style={webStyles.minuteContainer}>
+          <div style={webStyles.separator} />
+          <select
+            value={selectedMinute}
+            onChange={(e) => {
+              const newMinute = Number(e.target.value);
+              setSelectedMinute(newMinute);
+              const newDate = new Date(initialTime);
+              newDate.setHours(selectedHour, newMinute);
+              onSelectTime(newDate);
+            }}
+            style={webStyles.select}
+          >
+            {Array.from({ length: 60 }, (_, i) => (
+              <option key={i} value={i}>
+                {i.toString().padStart(2, "0")}分
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     );
   } else {
     return (
@@ -131,66 +154,73 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
 };
 
 const webStyles = {
+  separator: {
+    width: '1px' as const,
+    height: '20px' as const,
+    backgroundColor: '#E5E7EB' as const,
+    flexShrink: 0 as const,
+    margin: '0 8px' as const,
+  },
   select: {
-    height: "100%",
-    border: "none",
-    backgroundColor: "transparent",
-    paddingLeft: 8,
-    backgroundRepeat: "no-repeat",
-    backgroundPosition: "right 8px center",
-    backgroundSize: "8px auto",
-  } as const,
-};
+    height: '100%' as const,
+    minWidth: '70px' as const,
+    backgroundColor: 'transparent' as const,
+    border: 'none' as const,
+    padding: '0 8px' as const,
+    fontSize: '14px' as const,
+    color: '#333333' as const,
+    cursor: 'pointer' as const,
+    outline: 'none' as const,
+    appearance: 'none' as const,
+    WebkitAppearance: 'none' as const,
+    MozAppearance: 'none' as const,
+    textAlign: 'center' as const,
+  },
+  container: {
+    display: 'flex' as const,
+    alignItems: 'center' as const,
+    height: '40px' as const,
+    backgroundColor: 'white' as const,
+    border: '1px solid #ccc' as const,
+    borderRadius: '4px' as const,
+    padding: '0 8px' as const,
+  },
+  icon: {
+    width: '20px' as const,
+    height: '20px' as const,
+    color: '#9CA3AF' as const,
+    marginRight: '8px' as const,
+    flexShrink: 0 as const,
+  },
+  timeContainer: {
+    display: 'flex' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    flex: 1 as const,
+    gap: '8px' as const,
+  },
+  leftSection: {
+    display: 'flex' as const,
+    alignItems: 'center' as const,
+    height: '100%' as const,
+    flexShrink: 0 as const,
+  },
+  minuteContainer: {
+    display: 'flex' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    flex: 1 as const,
+  },
+ 
+} as const;
 
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    height: "100%",
-    padding: 0,
-  },
-  picker: {
-    width: "100%",
-    height: "100%",
-  },
-  modalButton: {
-    padding: 10,
-    minWidth: 80,
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  modalButtonText: {
-    color: "#007AFF",
-    fontSize: 16,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 20,
-    width: "100%",
-  },
-  timeList: {
-    height: 200,
-    width: 80,
-  },
-  timeSeparator: {
-    fontSize: 24,
-    marginHorizontal: 20,
-  },
-  timePickerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    ...(Platform.OS === "web" && {
-      justifyContent: "space-between",
-      paddingHorizontal: 20,
-    }),
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
-
   timePickerModalContent: {
     backgroundColor: "white",
     borderRadius: 10,
@@ -203,27 +233,50 @@ const styles = StyleSheet.create({
     elevation: 5,
     width: "90%",
     maxWidth: 350,
-    ...(Platform.OS === "web" && {
-      minWidth: 300,
-      maxWidth: 400,
-      width: "95%",
-    }),
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 15,
+    textAlign: "center",
   },
-  timeItemText: {
-    fontSize: 16,
+  timePickerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
   },
-  selectedTimeItem: {
-    backgroundColor: "#e6e6e6",
+  timeList: {
+    height: 200,
+    width: 80,
+  },
+  timeSeparator: {
+    fontSize: 24,
+    marginHorizontal: 20,
   },
   timeItem: {
     alignItems: "center",
     padding: 10,
+  },
+  selectedTimeItem: {
+    backgroundColor: "#e6e6e6",
+  },
+  timeItemText: {
+    fontSize: 16,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 20,
+    width: "100%",
+  },
+  modalButton: {
+    padding: 10,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "#007AFF",
+    fontSize: 16,
   },
 });
 
