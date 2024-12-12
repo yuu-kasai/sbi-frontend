@@ -22,6 +22,8 @@ import AccordionItem from "@/components/AccordionItem";
 import { GoogleMap, LoadScript } from "@react-google-maps/api";
 import Constants from "expo-constants";
 import axios from "axios";
+import DepartureAutocomplete from "@/components/DepartureAutocomplete";
+import ArrivalAutocomplete from "@/components/ArrivalAutocomplete";
 
 // Types
 interface SearchParams {
@@ -146,11 +148,6 @@ export default function HomeScreen() {
   }, []);
 
   const handleSearch = async () => {
-    if (!departure || !arrival) {
-      alert("出発地と到着地を入力してください。");
-      return;
-    }
-
     setIsSearching(true);
     setDetailedSearchResults([]);
 
@@ -476,7 +473,6 @@ export default function HomeScreen() {
     if (Platform.OS === "web") {
       return (
         <View style={styles.inputWrapper}>
-        
           <CustomTimePicker
             onClose={() => setShowTimePicker(false)}
             isVisible={showTimePicker}
@@ -633,49 +629,14 @@ export default function HomeScreen() {
         </View>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.card}>
-            <View
-              style={[
-                styles.departure,
-                isDepartureFocused && styles.focusedInput,
-              ]}
-            >
-              <Ionicons name="location-outline" size={20} color={"#666"} />
-              <TextInput
-                style={styles.input}
-                placeholder="出発地を入力"
-                placeholderTextColor={placeholderColor}
-                value={departure}
-                onChangeText={setDeparture}
-                onFocus={() => setIsDepartureFocused(true)}
-                onBlur={() => setIsDepartureFocused(false)}
-              />
-            </View>
-
+            <DepartureAutocomplete />
             <TouchableOpacity
               style={styles.swapButton}
               onPress={swapDepartureArrival}
             >
               <Ionicons name="swap-vertical" size={24} color="#007AFF" />
             </TouchableOpacity>
-
-            <View
-              style={[
-                styles.inputContainer,
-                isArrivalFocused && styles.focusedInput,
-              ]}
-            >
-              <Ionicons name="flag-outline" size={20} color={"#666"} />
-              <TextInput
-                style={styles.input}
-                placeholder="到着地を入力"
-                placeholderTextColor={placeholderColor}
-                value={arrival}
-                onChangeText={setArrival}
-                onFocus={() => setIsArrivalFocused(true)}
-                onBlur={() => setIsArrivalFocused(false)}
-              />
-            </View>
-
+            <ArrivalAutocomplete />
             <View style={styles.row}>
               <View style={[styles.inputWrapper]}>
                 <TouchableOpacity
@@ -846,7 +807,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 4,
     height: 40,
-    width: "100%", 
+    width: "100%",
     backgroundColor: "white",
   },
   timePickerContainer: {
