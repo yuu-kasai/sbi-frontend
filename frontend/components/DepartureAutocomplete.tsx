@@ -115,11 +115,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
+    paddingLeft: 8,
   },
   input: {
     height: 40,
     paddingHorizontal: 8,
+    width: "100%",
   },
   resultsContainer: {
     backgroundColor: "white",

@@ -136,7 +136,7 @@ export default function HomeScreen() {
   }, []);
 
   const toggleDatePicker = useCallback(() => {
-    if (dateButtonRef.current && Platform.OS === "web") {
+    if (dateButtonRef.current && !isMobile) {
       dateButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
         setCalendarPosition({
           top: pageY + height,
@@ -346,8 +346,10 @@ export default function HomeScreen() {
 
   const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
 
+  const isMobile = Platform.OS === "web" && window.innerWidth <= 768;
+
   const renderDatePicker = () => {
-    if (Platform.OS === "web") {
+    if (!isMobile) {
       return showDatePicker ? (
         <View
           style={[
@@ -411,7 +413,7 @@ export default function HomeScreen() {
     }
 
     if (detailedSearchResults.length > 0) {
-      if (Platform.OS === "web") {
+      if (!isMobile) {
         return (
           <>
             <Text style={styles.resultsTitle}>検索結果</Text>
@@ -470,7 +472,7 @@ export default function HomeScreen() {
   };
 
   const renderTimePicker = () => {
-    if (Platform.OS === "web") {
+    if (!isMobile) {
       return (
         <View style={styles.inputWrapper}>
           <CustomTimePicker
@@ -519,7 +521,7 @@ export default function HomeScreen() {
   };
   const placeholderColor = "rgba(102, 102, 102, 0.6)";
 
-  if (Platform.OS === "web") {
+  if (!isMobile) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
@@ -708,7 +710,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -731,7 +733,7 @@ const styles = StyleSheet.create({
   webInputContainer: {
     display: "flex",
     width: "100%",
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       alignItems: "center",
     }),
   },
@@ -739,7 +741,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       justifyContent: "center",
       width: "100%",
     }),
@@ -752,7 +754,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     height: 40,
     paddingHorizontal: 8,
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       flex: 1,
       maxWidth: "45%",
     }),
@@ -766,7 +768,7 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: 8,
     marginBottom: 12,
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       paddingVertical: 8,
     }),
   },
@@ -776,21 +778,21 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     height: 40,
     color: "#333333",
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       outlineStyle: "none",
     }),
   },
   row: {
     flexDirection: "row",
     marginBottom: 12,
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       justifyContent: "center",
       width: "100%",
     }),
   },
   inputWrapper: {
     flex: 1,
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       flex: 1,
       maxWidth: "45%",
     }),
@@ -816,7 +818,7 @@ const styles = StyleSheet.create({
   },
   timePickerWrapper: {
     flex: 1,
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       flex: 1,
       maxWidth: "45%",
     }),
@@ -827,7 +829,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: "center",
     justifyContent: "center",
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       textAlign: "center",
       width: "80%",
       maxWidth: 400,
@@ -941,7 +943,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     height: 40,
     paddingHorizontal: 8,
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       flex: 1,
       maxWidth: "45%",
     }),
@@ -989,13 +991,13 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "90deg" }],
   },
   spacer: {
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       width: 48,
       marginLeft: 8,
     }),
   },
   buttonContainer: {
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       width: "95%",
       display: "flex",
       justifyContent: "center",
@@ -1008,7 +1010,7 @@ const styles = StyleSheet.create({
   focusedInput: {
     borderColor: "#007AFF",
     borderWidth: 2,
-    ...(Platform.OS === "web" && {
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       boxShadow: "0 0 0 1px #007AFF",
     }),
   },

@@ -29,6 +29,8 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
     initialTime.getMinutes()
   );
 
+  const isMobile = Platform.OS === "web" && window.innerWidth <= 768;
+
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
@@ -68,7 +70,7 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
   }, [initialTime]);
 
 
-  if (Platform.OS === "web") {
+  if (!isMobile) {
     return (
       <div style={webStyles.container}>
         <div style={webStyles.leftSection}>
