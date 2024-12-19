@@ -345,6 +345,7 @@ export default function HomeScreen() {
   };
 
   const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
+  console.log(GOOGLE_MAPS_API_KEY);
 
   const isMobile = Platform.OS === "web" && window.innerWidth <= 768;
 
