@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       justifyContent: "center",
-      width: "100%",
+      width: "94%",
     }),
   },
   webinputContainer: {
