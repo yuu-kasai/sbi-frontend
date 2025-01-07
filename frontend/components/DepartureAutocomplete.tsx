@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 interface Station {
   id: string;
-  name: string;
+  stopName: string;
 }
 
 interface DepartureAutocompleteProps {
@@ -30,16 +30,27 @@ const DepartureAutocomplete: React.FC<DepartureAutocompleteProps> = ({
 
   // APIからのデータ取得をシミュレート
   const fetchStations = async (text: string): Promise<Station[]> => {
-    const dummyData: Station[] = [
-      { id: "1", name: "徳島駅" },
-      { id: "2", name: "鮎喰駅" },
-      { id: "3", name: "阿波富田駅" },
-      { id: "4", name: "阿波池田駅" },
-    ];
+    try {
+      //qに入力値が入る
+      const response = await fetch(
+        "http://153.127.67.155:8001/backend/stops/search/?q=" + text,
+        {
+          method: "GET",
+          mode: "cors",
+        }
+      );
+      //json形式に変換
+      const data = await response.json();
 
-    return dummyData.filter((item) =>
-      item.name.toLowerCase().includes(text.toLowerCase())
-    );
+      //json形式を整形
+      return data.stops.map((stop: { stop_name: string }, index: number) => ({
+        stopName: stop.stop_name, // デコード処理を削除
+        id: String(index + 1), // 1から始まる連番のidを付与
+      }));
+    } catch (error) {
+      console.error("Error fetching stations:", error);
+      return [];
+    }
   };
 
   const onChangeText = async (text: string) => {
@@ -57,9 +68,9 @@ const DepartureAutocomplete: React.FC<DepartureAutocompleteProps> = ({
   const renderItem = ({ item }: { item: Station }) => (
     <TouchableOpacity
       onPress={() => {
-        setQuery(item.name);
+        setQuery(item.stopName);
         if (onSelect) {
-          onSelect(item.name);
+          onSelect(item.stopName);
         }
         setShowResults(false);
         setData([]);
@@ -68,7 +79,7 @@ const DepartureAutocomplete: React.FC<DepartureAutocompleteProps> = ({
       style={styles.suggestionItem}
     >
       <Ionicons name="location-outline" size={20} color="#666" />
-      <Text style={styles.suggestionText}>{item.name}</Text>
+      <Text style={styles.suggestionText}>{item.stopName}</Text>
     </TouchableOpacity>
   );
 
