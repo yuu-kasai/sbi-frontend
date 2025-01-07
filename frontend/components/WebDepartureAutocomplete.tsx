@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 interface Station {
   id: string;
-  name: string;
+  stopName: string;
 }
 
 interface WebDepartureAutocompleteProps {
@@ -31,18 +31,28 @@ const WebDepartureAutocomplete: React.FC<WebDepartureAutocompleteProps> = ({
 
   // APIからのデータ取得をシミュレート
   const fetchStations = async (text: string): Promise<Station[]> => {
-    const dummyData: Station[] = [
-      { id: "1", name: "徳島駅" },
-      { id: "2", name: "鮎喰駅" },
-      { id: "3", name: "阿波富田駅" },
-      { id: "4", name: "阿波池田駅" },
-    ];
+    try {
+      //qに入力値が入る
+      const response = await fetch(
+        "http://153.127.67.155:8001/backend/stops/search/?q=" + text,
+        {
+          method: "GET",
+          mode: "cors",
+        }
+      );
+      //json形式に変換
+      const data = await response.json();
 
-    return dummyData.filter((item) =>
-      item.name.toLowerCase().includes(text.toLowerCase())
-    );
+      //json形式を整形
+      return data.stops.map((stop: { stop_name: string }, index: number) => ({
+        stopName: stop.stop_name, // デコード処理を削除
+        id: String(index + 1), // 1から始まる連番のidを付与
+      }));
+    } catch (error) {
+      console.error("Error fetching stations:", error);
+      return [];
+    }
   };
-
   const onChangeText = async (text: string) => {
     setQuery(text);
     if (text.length > 0) {
@@ -58,9 +68,9 @@ const WebDepartureAutocomplete: React.FC<WebDepartureAutocompleteProps> = ({
   const renderItem = ({ item }: { item: Station }) => (
     <TouchableOpacity
       onPress={() => {
-        setQuery(item.name);
+        setQuery(item.stopName);
         if (onSelect) {
-          onSelect(item.name);
+          onSelect(item.stopName);
         }
         setShowResults(false);
         setData([]);
@@ -69,7 +79,7 @@ const WebDepartureAutocomplete: React.FC<WebDepartureAutocompleteProps> = ({
       style={styles.suggestionItem}
     >
       <Ionicons name="location-outline" size={20} color="#666" />
-      <Text style={styles.suggestionText}>{item.name}</Text>
+      <Text style={styles.suggestionText}>{item.stopName}</Text>
     </TouchableOpacity>
   );
 
@@ -109,8 +119,8 @@ const styles = StyleSheet.create({
     flex: 1,
     zIndex: 1,
     marginBottom: 16,
-    width: '45%', // コンテナの幅を制限（この値は必要に応じて調整可能）
-    alignSelf: 'center', // 中央寄せ
+    width: "45%", // コンテナの幅を制限（この値は必要に応じて調整可能）
+    alignSelf: "center", // 中央寄せ
   },
   inputContainer: {
     borderColor: "#ccc",

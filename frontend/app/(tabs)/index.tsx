@@ -21,7 +21,6 @@ import CustomTimePicker from "@/components/CustomTimePicker";
 import AccordionItem from "@/components/AccordionItem";
 import { GoogleMap, LoadScript } from "@react-google-maps/api";
 import Constants from "expo-constants";
-import axios from "axios";
 import DepartureAutocomplete from "@/components/DepartureAutocomplete";
 import ArrivalAutocomplete from "@/components/ArrivalAutocomplete";
 import WebArrivalAutocomplete from "@/components/WebArrivalAutocomplete";
@@ -104,22 +103,6 @@ export default function HomeScreen() {
   const [timeType, setTimeType] = useState<"departure" | "arrival">(
     "departure"
   );
-  const [isDepartureFocused, setIsDepartureFocused] = useState(false);
-  const [isArrivalFocused, setIsArrivalFocused] = useState(false);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // バックエンドのURLがポート8000で起動していると仮定
-        const response = await axios.get("http://localhost:8000/api/get-data/");
-        setDate(response.data.message);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const handleDateChange = useCallback((selectedDate: Date | string | null) => {
     if (selectedDate) {
@@ -308,9 +291,6 @@ export default function HomeScreen() {
         }),
         isArrivalTime,
       };
-
-      // const results = await fetchSearchResults(searchParams);
-      // setDetailedSearchResults(results);
     } catch (error) {
       console.error("検索に失敗しました:", error);
       alert("検索中にエラーが発生しました。もう一度お試しください。");
@@ -774,7 +754,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginBottom: 12,
     ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
-      paddingVertical: 8, 
+      paddingVertical: 8,
     }),
   },
   input: {
