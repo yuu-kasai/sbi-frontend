@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-
 interface Station {
   id: string;
   stopName: string;
@@ -31,6 +30,7 @@ const ArrivalAutocomplete: React.FC<ArrivalAutocompleteProps> = ({
 
   // APIからのデータ取得をシミュレート
   const fetchStations = async (text: string): Promise<Station[]> => {
+    if (text.length < 2) return [];
     try {
       //qに入力値が入る
       const response = await fetch(
@@ -44,10 +44,13 @@ const ArrivalAutocomplete: React.FC<ArrivalAutocompleteProps> = ({
       const data = await response.json();
 
       //json形式を整形
-      return data.stops.map((stop: { stop_name: string }, index: number) => ({
-        stopName: stop.stop_name, // デコード処理を削除
-        id: String(index + 1), // 1から始まる連番のidを付与
-      }));
+      // 最大10件に制限して返す
+      return data.stops
+        .slice(0, 3)
+        .map((stop: { stop_name: string }, index: number) => ({
+          stopName: stop.stop_name,
+          id: String(index + 1),
+        }));
     } catch (error) {
       console.error("Error fetching stations:", error);
       return [];
@@ -141,7 +144,9 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 4,
     marginTop: 1,
-    maxHeight: 200,
+    maxHeight: 100,
+    zIndex: 9999,
+    
   },
   suggestionItem: {
     flexDirection: "row",
