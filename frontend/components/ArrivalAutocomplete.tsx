@@ -88,7 +88,7 @@ const ArrivalAutocomplete: React.FC<ArrivalAutocompleteProps> = ({
   );
 
   return (
-    <View style={styles.container}>
+    <View style={styles.mainContainer}>
       <View style={styles.inputContainer}>
         <Ionicons name="location-outline" size={20} color={"#666"} />
         <TextInput
@@ -105,13 +105,16 @@ const ArrivalAutocomplete: React.FC<ArrivalAutocompleteProps> = ({
         />
       </View>
       {showResults && data.length > 0 && (
-        <View style={styles.resultsContainer}>
-          <FlatList
-            data={data}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            keyboardShouldPersistTaps="always"
-          />
+        <View style={styles.modalOverlay}>
+          <View style={styles.resultsContainer}>
+            <FlatList
+              data={data}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              keyboardShouldPersistTaps="always"
+              style={styles.resultsList}
+            />
+        </View>
         </View>
       )}
     </View>
@@ -119,34 +122,50 @@ const ArrivalAutocomplete: React.FC<ArrivalAutocompleteProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    zIndex: 1,
+  mainContainer: {
     marginBottom: 16,
+    position: 'relative',
+    width: '100%',
+    height: 40,
+    zIndex: 3000,
   },
   inputContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     backgroundColor: "white",
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 4,
     flexDirection: "row",
     alignItems: "center",
+    height: 40,
     paddingLeft: 8,
+    zIndex: 300,
   },
   input: {
+    flex: 1,
     height: 40,
     paddingHorizontal: 8,
-    width: "100%",
   },
   resultsContainer: {
     backgroundColor: "white",
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 4,
-    marginTop: 1,
-    maxHeight: 100,
-    zIndex: 9999,
-    
+    maxHeight: 200,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  resultsList: {
+    width: "100%",
   },
   suggestionItem: {
     flexDirection: "row",
@@ -159,6 +178,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: "#333",
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 42, // inputContainerの高さ + マージン
+    left: 0,
+    right: 0,
+    zIndex: 3002,
   },
 });
 

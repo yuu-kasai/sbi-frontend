@@ -84,7 +84,9 @@ const WebDepartureAutocomplete: React.FC<WebDepartureAutocompleteProps> = ({
   );
 
   return (
+    <View style={styles.mainContainer}>
     <View style={styles.container}>
+    <View style={styles.inputWrapper}>
       <View style={styles.inputContainer}>
         <Ionicons name="location-outline" size={20} color={"#666"} />
         <TextInput
@@ -100,45 +102,76 @@ const WebDepartureAutocomplete: React.FC<WebDepartureAutocompleteProps> = ({
           }}
         />
       </View>
+      </View>
       {showResults && data.length > 0 && (
+          <View style={[styles.resultsOuterContainer]}>
         <View style={styles.resultsContainer}>
           <FlatList
             data={data}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
             keyboardShouldPersistTaps="always"
+            style={styles.resultsList}
           />
         </View>
+        </View>
       )}
+    </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    zIndex: 1,
+  mainContainer: {
+    width: "45%",
+    alignSelf: "center",
     marginBottom: 16,
-    width: "45%", // コンテナの幅を制限（この値は必要に応じて調整可能）
-    alignSelf: "center", // 中央寄せ
+  },
+  container: {
+    position: "relative",
+    width: "100%",
+    ...(Platform.OS === "web" ? {
+      isolation: "isolate",
+    } : {}),
+  },
+  inputWrapper: {
+    position: "relative",
+    width: "100%",
+    zIndex: 2,
+    ...(Platform.OS === "web" ? {
+      isolation: "isolate",
+    } : {}),
   },
   inputContainer: {
-    borderColor: "#ccc",
-    borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#ccc",
     borderRadius: 4,
-    height: 40,
     paddingLeft: 8,
-    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
-      flex: 1,
-      maxWidth: "100%",
-    }),
+    height: 40,
+    ...(Platform.OS === "web" ? {
+      position: "relative",
+      zIndex: 2,
+    } : {}),
   },
   input: {
+    flex: 1,
     height: 40,
     paddingHorizontal: 8,
-    width: "100%",
+    backgroundColor: 'transparent',
+  },
+  resultsOuterContainer: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    zIndex: 1,
+    ...(Platform.OS === "web" ? {
+      position: "absolute",
+      zIndex: 9999,
+    } : {}),
   },
   resultsContainer: {
     backgroundColor: "white",
@@ -147,6 +180,21 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginTop: 1,
     maxHeight: 200,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    ...(Platform.OS === "web" ? {
+      position: "relative",
+      zIndex: 9999,
+    } : {}),
+  },
+  resultsList: {
+    width: '100%',
   },
   suggestionItem: {
     flexDirection: "row",
