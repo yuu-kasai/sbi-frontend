@@ -785,6 +785,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
     flexDirection: "row",
     marginBottom: 12,
+    width: "100%",
     ...(Platform.OS === "web" && window.innerWidth <= 768
       ? {
           gap: 8,
@@ -792,15 +793,19 @@ const styles = StyleSheet.create({
         }
       : {
           justifyContent: "center",
-          width: "100%",
+          alignItems: "center",
+          width: "94%",
         }),
   },
   inputWrapper: {
-    flex: 1,
-    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
-      flex: 1,
-      maxWidth: "45%",
-    }),
+    ...(Platform.OS === "web" && window.innerWidth <= 768
+      ? {
+          flex: 1,
+        }
+      : {
+          flex: 1,
+          maxWidth: "45%",
+        }),
   },
   dateText: {
     flex: 1,
@@ -814,8 +819,11 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 4,
     height: 40,
-    width: "100%",
+    paddingHorizontal: 8,
     backgroundColor: "white",
+    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
+      width: "100%",
+    }),
   },
   timePickerContainer: {
     flexDirection: "row",
