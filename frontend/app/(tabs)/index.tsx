@@ -695,7 +695,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
-    ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
+    position: 'relative',
+    ...(Platform.OS === "web" && window.innerWidth <= 768 ? {
+      overflow: "visible",
+    } : {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -716,16 +719,20 @@ const styles = StyleSheet.create({
     }),
   },
   webInputContainer: {
+    position: 'relative',
     display: "flex",
     width: "100%",
+    zIndex: 1000, 
     ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       alignItems: "center",
     }),
   },
   locationInputsContainer: {
+    position: 'relative',
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
+    zIndex: 1000,
     ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       justifyContent: "center",
       width: "94%",
@@ -767,12 +774,21 @@ const styles = StyleSheet.create({
       outlineStyle: "none",
     }),
   },
+  mobileSearchContainer: {
+    width: "100%",
+    position: "relative",
+    zIndex: 3000,
+    marginBottom: 16,
+  },
   row: {
+    position: 'relative',
+    zIndex: 1,
     flexDirection: "row",
     marginBottom: 12,
     ...(Platform.OS === "web" && window.innerWidth <= 768
       ? {
           gap: 8,
+          marginTop: 8,
         }
       : {
           justifyContent: "center",
@@ -986,6 +1002,10 @@ const styles = StyleSheet.create({
     }),
   },
   buttonContainer: {
+    position: 'relative',
+    zIndex: 1,
+    marginTop: 16,
+    width: "100%",
     ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       width: "95%",
       display: "flex",

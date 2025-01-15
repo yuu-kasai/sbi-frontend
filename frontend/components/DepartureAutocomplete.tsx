@@ -88,7 +88,9 @@ const DepartureAutocomplete: React.FC<DepartureAutocompleteProps> = ({
   );
 
   return (
+    <View style={styles.mainContainer}>
     <View style={styles.container}>
+    <View style={styles.inputWrapper}>
       <View style={styles.inputContainer}>
         <Ionicons name="location-outline" size={20} color={"#666"} />
         <TextInput
@@ -104,38 +106,70 @@ const DepartureAutocomplete: React.FC<DepartureAutocompleteProps> = ({
           }}
         />
       </View>
+      </View>
       {showResults && data.length > 0 && (
+        <View style={styles.modalOverlay}>
         <View style={styles.resultsContainer}>
           <FlatList
             data={data}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
             keyboardShouldPersistTaps="always"
+            style={styles.resultsList}
           />
         </View>
+        </View>
       )}
+    </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    marginBottom: 16,
+    position: 'relative',
+    width: '100%',
+    height: 40,
+    zIndex: 4000, 
+  },
   container: {
-    flex: 1,
-    zIndex: 9999,
+    position: "relative",
+    width: "100%",
+    zIndex: 4000,
+  },
+  inputWrapper: {
+    position: "relative",
+    width: "100%",
+    zIndex: 4001,
   },
   inputContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     backgroundColor: "white",
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 4,
     flexDirection: "row",
     alignItems: "center",
+    height: 40,
     paddingLeft: 8,
+    zIndex: 4001,
   },
   input: {
+    flex: 1,
     height: 40,
     paddingHorizontal: 8,
-    width: "100%",
+    backgroundColor: 'transparent',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 42,
+    left: 0,
+    right: 0,
+    zIndex: 4002,
   },
   resultsContainer: {
     backgroundColor: "white",
@@ -143,8 +177,18 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 4,
     marginTop: 1,
-    maxHeight: 100,
-    zIndex: 9999,
+    maxHeight: 200,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  resultsList: {
+    width: "100%",
   },
   suggestionItem: {
     flexDirection: "row",
