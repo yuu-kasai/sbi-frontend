@@ -19,7 +19,12 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Calendar } from "react-native-calendars";
 import CustomTimePicker from "@/components/CustomTimePicker";
 import AccordionItem from "@/components/AccordionItem";
-import { GoogleMap, LoadScript } from "@react-google-maps/api";
+import {
+  GoogleMap,
+  LoadScript,
+  Polyline,
+  Marker,
+} from "@react-google-maps/api";
 import Constants from "expo-constants";
 import DepartureAutocomplete from "@/components/DepartureAutocomplete";
 import ArrivalAutocomplete from "@/components/ArrivalAutocomplete";
@@ -27,12 +32,15 @@ import WebArrivalAutocomplete from "@/components/WebArrivalAutocomplete";
 import WebDepartureAutocomplete from "@/components/WebDepartureAutocomplete";
 
 // Types
-interface SearchParams {
-  departure: string;
-  arrival: string;
-  date: string;
+interface Stop {
+  sequence: number;
   time: string;
-  isArrivalTime: boolean;
+  stop_id: string;
+  stop_name: string;
+  location: {
+    stop_lat: number;
+    stop_lon: number;
+  };
 }
 
 interface RouteSegment {
@@ -47,6 +55,7 @@ interface RouteSegment {
   departureTime?: string;
   arrivalTime?: string;
   videoUrl?: string;
+  stops?: Stop[];
 }
 
 interface DetailedSearchResult {
@@ -69,20 +78,69 @@ declare global {
 
 const API_BASE_URL =
   process.env.NODE_ENV === "production"
-    ? "https://あなたの本番ドメイン.com/api"
-    : "http://localhost:8081";
+    ? "http://153.127.67.155:8001"
+    : "http://153.127.67.155:8001"; // 開発環境でも本番のURLを使用
 
-// const fetchSearchResults = async (
-//   params: SearchParams
-// ): Promise<DetailedSearchResult[]> => {
-//   try {
-//     const response = await axios.post(`${API_BASE_URL}/search`, params);
-//     return response.data;
-//   } catch (error) {
-//     console.error("API request failed:", error);
-//     throw new Error("検索結果の取得に失敗しました");
-//   }
-// };
+// API呼び出しの実装
+const fetchSearchResults = async (
+  departure: string,
+  arrival: string
+): Promise<DetailedSearchResult[]> => {
+  try {
+    // クエリパラメータの構築
+    const params = new URLSearchParams({
+      departure_place: departure.trim(),
+      arrival_place: arrival.trim(),
+      date: new Date().toISOString().split("T")[0], // 必要に応じて
+    });
+
+    // URLの構築
+    const url = `${API_BASE_URL}/backend/route?${params.toString()}`;
+    console.log("リクエストURL:", url);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("サーバーエラー:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
+      throw new Error(`HTTPエラー: ${response.status} ${response.statusText}`);
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      console.error("不正なContent-Type:", contentType);
+      throw new Error("サーバーからの応答が不正な形式です");
+    }
+
+    const data = await response.json();
+    console.log("レスポンスデータ:", data); // デバッグ用
+    return data;
+  } catch (error) {
+    console.error("APIリクエストエラー:", error);
+
+    if (
+      error instanceof TypeError &&
+      error.message.includes("Failed to fetch")
+    ) {
+      throw new Error(
+        "サーバーに接続できません。インターネット接続を確認してください。"
+      );
+    }
+
+    throw new Error(
+      error instanceof Error ? error.message : "検索結果の取得に失敗しました"
+    );
+  }
+};
 
 export default function HomeScreen() {
   const [departure, setDeparture] = useState("");
@@ -132,168 +190,87 @@ export default function HomeScreen() {
     setShowDatePicker((prevState) => !prevState);
   }, []);
 
+  // handleSearch 関数の改善
   const handleSearch = async () => {
     setIsSearching(true);
     setDetailedSearchResults([]);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // 入力チェック
+      if (!departure || !arrival) {
+        alert("出発地と到着地を入力してください。");
+        return;
+      }
 
-      const mockDetailedResults: DetailedSearchResult[] = [
-        {
-          id: "1",
-          totalDuration: "11時間35分",
-          totalPrice: "14,300",
-          departureTime: "19:00",
-          arrivalTime: "06:35",
-          videoUrl: "../../assets/videos/harbis_osaka.mp4",
-          segments: [
-            // {
-            //   id: "1-1",
-            //   from: "出発駅",
-            //   to: "到着駅",
-            //   type: "bus",
-            //   duration: "40分",
-            //   price: "500",
-            //   lineName: "山手線",
-            //   departureTime: "10:00",
-            //   arrivalTime: "10:40",
-            // },
-            // {
-            //   id: "1-2",
-            //   from: "乗換駅",
-            //   to: "到着駅",
-            //   type: "bus",
-            //   duration: "35分",
-            //   price: "500",
-            //   lineName: "急行バス",
-            //   departureTime: "10:40",
-            //   arrivalTime: "11:15",
-            // },
-            {
-              id: "1-1",
-              from: "徳島駅前",
-              to: "大阪（阪神三番街）",
-              type: "bus",
-              duration: "2時間25分",
-              price: "4,100",
-              lineName: "鳴門徳島大阪線",
-              departureTime: "19:00",
-              arrivalTime: "21:25",
-            },
-            {
-              id: "1-2",
-              from: "大阪（阪神三番街）",
-              to: "ハービス大阪",
-              type: "walk",
-              duration: "12分",
-              distance: "850m",
-              price: "0",
-              departureTime: "21:25",
-              arrivalTime: "22:37",
-              videoUrl: "../../assets/videos/harbis_osaka.mp4",
-            },
-            {
-              id: "1-3",
-              from: "ハービス大阪",
-              to: "バスターミナル東京八重洲",
-              type: "bus",
-              duration: "7時間30分",
-              price: "10,200",
-              departureTime: "21:37",
-              arrivalTime: "06:35",
-            },
-          ],
-        },
-        {
-          id: "2",
-          totalDuration: "9時間30分",
-          totalPrice: "9640",
-          departureTime: "20:30",
-          arrivalTime: "6:15",
-          segments: [
-            {
-              id: "2-1",
-              from: "徳島駅前",
-              to: "阪神三宮",
-              type: "bus",
-              duration: "2時間",
-              price: "3040",
-              lineName: "阪神線",
-              departureTime: "20:30",
-              arrivalTime: "22:30",
-            },
-            {
-              id: "2-2",
-              from: "阪神三宮",
-              to: "神戸三宮",
-              type: "walk",
-              duration: "1分",
-              distance: "140m",
-              price: "0",
-              departureTime: "22:30",
-              arrivalTime: "22:31",
-            },
-            {
-              id: "2-3",
-              from: "神戸三宮",
-              to: "HEARTSバスステーション博多",
-              type: "bus",
-              duration: "7時間30分",
-              price: "6600",
-              departureTime: "22:45",
-              arrivalTime: "6:15",
-            },
-          ],
-        },
-        {
-          id: "3",
-          totalDuration: "40分",
-          totalPrice: "800",
-          departureTime: "10:25",
-          arrivalTime: "11:05",
-          segments: [
-            {
-              id: "3-1",
-              from: "出発駅",
-              to: "中間駅",
-              type: "train",
-              duration: "40分",
-              price: "600",
-              lineName: "山手線",
-              departureTime: "10:25",
-              arrivalTime: "11:05",
-            },
-            // {
-            //   id: "2-2",
-            //   from: "中間駅",
-            //   to: "到着駅",
-            //   type: "walk",
-            //   duration: "40分",
-            //   distance: "3km",
-            //   price: "200",
-            //   departureTime: "11:05",
-            //   arrivalTime: "11:45",
-            // },
-          ],
-        },
-      ];
+      if (departure === arrival) {
+        alert("出発地と到着地が同じです。");
+        return;
+      }
 
-      setDetailedSearchResults(mockDetailedResults);
+      const transformApiResponse = (
+        apiResponse: any
+      ): DetailedSearchResult[] => {
+        return apiResponse.routes.map((route: any, index: number) => {
+          // 時間をHH:mm形式に変換
+          const departureTime = route.departure.time.substring(0, 5);
+          const arrivalTime = route.arrival.time.substring(0, 5);
 
-      const searchParams: SearchParams = {
-        departure,
-        arrival,
-        date: date.toISOString().split("T")[0],
+          // 経路情報を作成
+          const segment: RouteSegment = {
+            id: `${index + 1}-1`,
+            from: route.departure.place,
+            to: route.arrival.place,
+            type: "bus", // デフォルトはバスとして設定
+            duration: route.duration.replace("0:", ""), // "0:26:00" → "26分" の形式に変換
+            price: route.fare.price.toString(),
+            departureTime: departureTime,
+            arrivalTime: arrivalTime,
+            stops: route.stops, // 停留所データを追加
+          };
+
+          // 検索結果オブジェクトを作成
+          return {
+            id: (index + 1).toString(),
+            totalDuration: route.duration.replace("0:", ""),
+            totalPrice: route.fare.price.toString(),
+            departureTime: departureTime,
+            arrivalTime: arrivalTime,
+            segments: [segment],
+          };
+        });
+      };
+
+      // クエリパラメータの構築
+      const params = new URLSearchParams({
+        departure_place: departure.trim(),
+        arrival_place: arrival.trim(),
+        date: date.toISOString().split("T")[0], // YYYY-MM-DD形式
         time: date.toLocaleTimeString("ja-JP", {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        isArrivalTime,
-      };
+        is_arrival_time: isArrivalTime.toString(),
+      });
+
+      // APIリクエスト
+      const response = await fetch(
+        `${API_BASE_URL}/backend/route?${params.toString()}`
+      );
+      const data = await response.json();
+
+      if (data.status === "success") {
+        const transformedResults = transformApiResponse(data);
+        setDetailedSearchResults(transformedResults);
+      } else {
+        alert("検索結果の取得に失敗しました。");
+      }
     } catch (error) {
-      console.error("検索に失敗しました:", error);
-      alert("検索中にエラーが発生しました。もう一度お試しください。");
+      console.error("検索エラー:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "検索中にエラーが発生しました。もう一度お試しください。"
+      );
     } finally {
       setIsSearching(false);
     }
@@ -315,19 +292,35 @@ export default function HomeScreen() {
   const swapDepartureArrival = () => {
     const temp = departure;
     setDeparture(arrival);
+    // console.log(arrival)
     setArrival(temp);
   };
 
-  const containerStyle = {};
+  const flightPlanCoordinates =
+    detailedSearchResults.length > 0
+      ? detailedSearchResults[0].segments[0].stops?.map((stop) => ({
+          lat: stop.location.stop_lat,
+          lng: stop.location.stop_lon,
+        })) || []
+      : [];
 
-  // 初期表示位置（駅）
-  const center = {
-    lat: 34.0744223,
-    lng: 134.5514588,
+  // 場所
+  const DeparturePlace = {
+    lat: flightPlanCoordinates[0]?.lat || 33.59519,
+    lng: flightPlanCoordinates[0]?.lng || 134.21479,
+  };
+
+  const lastIndex = flightPlanCoordinates.length - 1;
+
+  const ArrivalPlace = {
+    lat: flightPlanCoordinates[lastIndex]?.lat || 33.59519,
+    lng: flightPlanCoordinates[lastIndex]?.lng || 134.21479,
   };
 
   const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
-  console.log(GOOGLE_MAPS_API_KEY);
+
+  console.log(detailedSearchResults);
+  // console.log(GOOGLE_MAPS_API_KEY);
 
   const isMobile = Platform.OS === "web" && window.innerWidth <= 768;
 
@@ -423,9 +416,24 @@ export default function HomeScreen() {
                     width: "100%",
                     height: "1500px",
                   }}
-                  center={center}
+                  center={{
+                    lat: flightPlanCoordinates[0]?.lat || 33.59519,
+                    lng: flightPlanCoordinates[0]?.lng || 134.21479,
+                  }}
                   zoom={15}
-                />
+                >
+                  <Polyline
+                    path={flightPlanCoordinates}
+                    options={{
+                      strokeColor: "#FF0000",
+                      strokeOpacity: 1.0,
+                      strokeWeight: 2,
+                      geodesic: true,
+                    }}
+                  />
+                  <Marker position={DeparturePlace} />
+                  <Marker position={ArrivalPlace} />
+                </GoogleMap>
               </LoadScript>
             </View>
           </>
@@ -516,23 +524,6 @@ export default function HomeScreen() {
           <View style={styles.card}>
             <View style={styles.webInputContainer}>
               <View style={styles.locationInputsContainer}>
-                {/* <View
-                  style={[
-                    styles.webDeparture,
-                    isDepartureFocused && styles.focusedInput,
-                  ]}
-                >
-                  <Ionicons name="location-outline" size={20} color={"#666"} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="出発地を入力"
-                    placeholderTextColor={placeholderColor}
-                    value={departure}
-                    onChangeText={setDeparture}
-                    onFocus={() => setIsDepartureFocused(true)}
-                    onBlur={() => setIsDepartureFocused(false)}
-                  />
-                </View> */}
                 <WebDepartureAutocomplete onSelect={setDeparture} value={departure}/>
                 <TouchableOpacity
                   style={styles.swapButton}
@@ -547,24 +538,6 @@ export default function HomeScreen() {
                     />
                   </View>
                 </TouchableOpacity>
-
-                {/* <View
-                  style={[
-                    styles.webinputContainer,
-                    isArrivalFocused && styles.focusedInput,
-                  ]}
-                >
-                  <Ionicons name="flag-outline" size={20} color={"#666"} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="到着地を入力"
-                    placeholderTextColor={placeholderColor}
-                    value={arrival}
-                    onChangeText={setArrival}
-                    onFocus={() => setIsArrivalFocused(true)}
-                    onBlur={() => setIsArrivalFocused(false)}
-                  />
-                </View> */}
                <WebArrivalAutocomplete onSelect={setArrival} value={arrival}/>
               </View>
 
@@ -703,14 +676,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
-    position: 'relative',
-    ...(Platform.OS === "web" && window.innerWidth <= 768 ? {
-      overflow: "visible",
-    } : {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-    }),
+    position: "relative",
+    ...(Platform.OS === "web" && window.innerWidth <= 768
+      ? {
+          overflow: "visible",
+        }
+      : {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }),
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -727,16 +702,16 @@ const styles = StyleSheet.create({
     }),
   },
   webInputContainer: {
-    position: 'relative',
+    position: "relative",
     display: "flex",
     width: "100%",
-    zIndex: 1000, 
+    zIndex: 1000,
     ...(!(Platform.OS === "web" && window.innerWidth <= 768) && {
       alignItems: "center",
     }),
   },
   locationInputsContainer: {
-    position: 'relative',
+    position: "relative",
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
@@ -789,7 +764,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   row: {
-    position: 'relative',
+    position: "relative",
     zIndex: 1,
     flexDirection: "row",
     marginBottom: 12,
@@ -1018,7 +993,7 @@ const styles = StyleSheet.create({
     }),
   },
   buttonContainer: {
-    position: 'relative',
+    position: "relative",
     zIndex: 1,
     marginTop: 16,
     width: "100%",
