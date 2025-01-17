@@ -339,6 +339,7 @@ export default function HomeScreen() {
             styles.webCalendarContainer,
             { top: calendarPosition.top, left: calendarPosition.left },
           ]}
+
         >
           <DatePicker
             selected={date}
@@ -532,7 +533,7 @@ export default function HomeScreen() {
                     onBlur={() => setIsDepartureFocused(false)}
                   />
                 </View> */}
-                <WebDepartureAutocomplete />
+                <WebDepartureAutocomplete onSelect={setDeparture} value={departure}/>
                 <TouchableOpacity
                   style={styles.swapButton}
                   onPress={swapDepartureArrival}
@@ -564,7 +565,7 @@ export default function HomeScreen() {
                     onBlur={() => setIsArrivalFocused(false)}
                   />
                 </View> */}
-                <WebArrivalAutocomplete />
+               <WebArrivalAutocomplete onSelect={setArrival} value={arrival}/>
               </View>
 
               <View style={styles.row}>
@@ -615,15 +616,22 @@ export default function HomeScreen() {
           <Text style={styles.headerTitle}>経路検索</Text>
         </View>
         <ScrollView contentContainerStyle={styles.container}>
+
           <View style={styles.card}>
-            <DepartureAutocomplete />
+          <DepartureAutocomplete
+            onSelect={setDeparture}
+            value={departure}
+          />
             <TouchableOpacity
               style={styles.swapButton}
               onPress={swapDepartureArrival}
             >
               <Ionicons name="swap-vertical" size={24} color="#007AFF" />
             </TouchableOpacity>
-            <ArrivalAutocomplete />
+            <ArrivalAutocomplete 
+            onSelect={setArrival}
+            value={arrival}
+          />
             <View style={styles.row}>
               <View style={[styles.inputWrapper]}>
                 <TouchableOpacity
