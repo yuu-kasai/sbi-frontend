@@ -19,7 +19,12 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Calendar } from "react-native-calendars";
 import CustomTimePicker from "@/components/CustomTimePicker";
 import AccordionItem from "@/components/AccordionItem";
-import { GoogleMap, LoadScript, Polyline } from "@react-google-maps/api";
+import {
+  GoogleMap,
+  LoadScript,
+  Polyline,
+  Marker,
+} from "@react-google-maps/api";
 import Constants from "expo-constants";
 import DepartureAutocomplete from "@/components/DepartureAutocomplete";
 import ArrivalAutocomplete from "@/components/ArrivalAutocomplete";
@@ -291,10 +296,6 @@ export default function HomeScreen() {
     setArrival(temp);
   };
 
-  const containerStyle = {};
-
-  // 初期表示位置（駅）
-  // Update the flightPlanCoordinates definition
   const flightPlanCoordinates =
     detailedSearchResults.length > 0
       ? detailedSearchResults[0].segments[0].stops?.map((stop) => ({
@@ -302,6 +303,19 @@ export default function HomeScreen() {
           lng: stop.location.stop_lon,
         })) || []
       : [];
+
+  // 場所
+  const DeparturePlace = {
+    lat: flightPlanCoordinates[0]?.lat || 33.59519,
+    lng: flightPlanCoordinates[0]?.lng || 134.21479,
+  };
+
+  const lastIndex = flightPlanCoordinates.length - 1;
+
+  const ArrivalPlace = {
+    lat: flightPlanCoordinates[lastIndex]?.lat || 33.59519,
+    lng: flightPlanCoordinates[lastIndex]?.lng || 134.21479,
+  };
 
   const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
 
@@ -416,6 +430,8 @@ export default function HomeScreen() {
                       geodesic: true,
                     }}
                   />
+                  <Marker position={DeparturePlace} />
+                  <Marker position={ArrivalPlace} />
                 </GoogleMap>
               </LoadScript>
             </View>
