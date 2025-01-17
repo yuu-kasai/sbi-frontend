@@ -332,6 +332,7 @@ export default function HomeScreen() {
             styles.webCalendarContainer,
             { top: calendarPosition.top, left: calendarPosition.left },
           ]}
+
         >
           <DatePicker
             selected={date}
@@ -523,7 +524,7 @@ export default function HomeScreen() {
           <View style={styles.card}>
             <View style={styles.webInputContainer}>
               <View style={styles.locationInputsContainer}>
-                <WebDepartureAutocomplete onSelect={setDeparture} />
+                <WebDepartureAutocomplete onSelect={setDeparture} value={departure}/>
                 <TouchableOpacity
                   style={styles.swapButton}
                   onPress={swapDepartureArrival}
@@ -537,7 +538,7 @@ export default function HomeScreen() {
                     />
                   </View>
                 </TouchableOpacity>
-                <WebArrivalAutocomplete onSelect={setArrival} />
+               <WebArrivalAutocomplete onSelect={setArrival} value={arrival}/>
               </View>
 
               <View style={styles.row}>
@@ -588,15 +589,22 @@ export default function HomeScreen() {
           <Text style={styles.headerTitle}>経路検索</Text>
         </View>
         <ScrollView contentContainerStyle={styles.container}>
+
           <View style={styles.card}>
-            <DepartureAutocomplete onSelect={setDeparture} />
+          <DepartureAutocomplete
+            onSelect={setDeparture}
+            value={departure}
+          />
             <TouchableOpacity
               style={styles.swapButton}
               onPress={swapDepartureArrival}
             >
               <Ionicons name="swap-vertical" size={24} color="#007AFF" />
             </TouchableOpacity>
-            <ArrivalAutocomplete onSelect={setArrival} />
+            <ArrivalAutocomplete 
+            onSelect={setArrival}
+            value={arrival}
+          />
             <View style={styles.row}>
               <View style={[styles.inputWrapper]}>
                 <TouchableOpacity

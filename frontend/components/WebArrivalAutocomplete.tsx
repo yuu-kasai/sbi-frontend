@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef,useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -17,17 +17,23 @@ interface Station {
   stopName: string;
 }
 
-interface WebArrivalAutocompleteProps {
-  onSelect?: (stationName: string) => void;
+export interface WebArrivalAutocompleteProps {
+  onSelect: (value: string) => void;
+  value: string;
 }
 
 const WebArrivalAutocomplete: React.FC<WebArrivalAutocompleteProps> = ({
   onSelect,
+  value,
 }) => {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(value ||"");
   const [data, setData] = useState<Station[]>([]);
   const [showResults, setShowResults] = useState(false);
   const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    setQuery(value || "");
+  }, [value]);
 
   // APIからのデータ取得をシミュレート
   const fetchStations = async (text: string): Promise<Station[]> => {
