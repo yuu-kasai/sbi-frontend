@@ -68,6 +68,45 @@ interface DetailedSearchResult {
   videoUrl?: string;
 }
 
+interface TransferRoute {
+  first_leg: {
+    departure: {
+      time: string;
+      place: string;
+    };
+    arrival: {
+      time: string;
+      place: string;
+    };
+    duration: string;
+    stops: Stop[];
+  };
+  second_leg: {
+    departure: {
+      time: string;
+      place: string;
+    };
+    arrival: {
+      time: string;
+      place: string;
+    };
+    duration: string;
+    stops: Stop[];
+  };
+  transfer_station: string;
+  total_fare: {
+    price: number;
+    currency: string;
+    payment_method: string;
+    breakdown: {
+      price: number;
+      currency: string;
+      payment_method: string;
+    }[];
+  };
+  duration: string;
+}
+
 declare global {
   namespace Constants {
     interface ManifestExtra {
@@ -210,34 +249,78 @@ export default function HomeScreen() {
       const transformApiResponse = (
         apiResponse: any
       ): DetailedSearchResult[] => {
-        return apiResponse.routes.map((route: any, index: number) => {
-          // 時間をHH:mm形式に変換
-          const departureTime = route.departure.time.substring(0, 5);
-          const arrivalTime = route.arrival.time.substring(0, 5);
+        if (apiResponse.routes[0].first_leg) {
+          // 乗り継ぎ経路の場合
+          return apiResponse.routes.map(
+            (route: TransferRoute, index: number) => {
+              const firstLeg = route.first_leg;
+              const secondLeg = route.second_leg;
 
-          // 経路情報を作成
-          const segment: RouteSegment = {
-            id: `${index + 1}-1`,
-            from: route.departure.place,
-            to: route.arrival.place,
-            type: "bus", // デフォルトはバスとして設定
-            duration: route.duration.replace("0:", ""), // "0:26:00" → "26分" の形式に変換
-            price: route.fare.price.toString(),
-            departureTime: departureTime,
-            arrivalTime: arrivalTime,
-            stops: route.stops, // 停留所データを追加
-          };
+              // 経路情報を作成（2つの区間）
+              const segments: RouteSegment[] = [
+                {
+                  id: `${index + 1}-1`,
+                  from: firstLeg.departure.place,
+                  to: route.transfer_station,
+                  type: "bus",
+                  duration: firstLeg.duration,
+                  price: route.total_fare.breakdown[0].price.toString(),
+                  departureTime: firstLeg.departure.time.substring(0, 5),
+                  arrivalTime: firstLeg.arrival.time.substring(0, 5),
+                  stops: firstLeg.stops,
+                },
+                {
+                  id: `${index + 1}-2`,
+                  from: route.transfer_station,
+                  to: secondLeg.arrival.place,
+                  type: "bus",
+                  duration: secondLeg.duration,
+                  price: route.total_fare.breakdown[1].price.toString(),
+                  departureTime: secondLeg.departure.time.substring(0, 5),
+                  arrivalTime: secondLeg.arrival.time.substring(0, 5),
+                  stops: secondLeg.stops,
+                },
+              ];
 
-          // 検索結果オブジェクトを作成
-          return {
-            id: (index + 1).toString(),
-            totalDuration: route.duration.replace("0:", ""),
-            totalPrice: route.fare.price.toString(),
-            departureTime: departureTime,
-            arrivalTime: arrivalTime,
-            segments: [segment],
-          };
-        });
+              return {
+                id: (index + 1).toString(),
+                totalDuration: route.duration,
+                totalPrice: route.total_fare.price.toString(),
+                departureTime: firstLeg.departure.time.substring(0, 5),
+                arrivalTime: secondLeg.arrival.time.substring(0, 5),
+                segments: segments,
+                transferStation: route.transfer_station,
+              };
+            }
+          );
+        } else {
+          // 直通経路の場合（既存の実装）
+          return apiResponse.routes.map((route: any, index: number) => {
+            const departureTime = route.departure.time.substring(0, 5);
+            const arrivalTime = route.arrival.time.substring(0, 5);
+
+            const segment: RouteSegment = {
+              id: `${index + 1}-1`,
+              from: route.departure.place,
+              to: route.arrival.place,
+              type: "bus",
+              duration: route.duration.replace("0:", ""),
+              price: route.fare.price.toString(),
+              departureTime: departureTime,
+              arrivalTime: arrivalTime,
+              stops: route.stops,
+            };
+
+            return {
+              id: (index + 1).toString(),
+              totalDuration: route.duration.replace("0:", ""),
+              totalPrice: route.fare.price.toString(),
+              departureTime: departureTime,
+              arrivalTime: arrivalTime,
+              segments: [segment],
+            };
+          });
+        }
       };
 
       // クエリパラメータの構築
@@ -251,6 +334,7 @@ export default function HomeScreen() {
         }),
         is_arrival_time: isArrivalTime.toString(),
       });
+      console.log(transformApiResponse);
 
       // APIリクエスト
       const response = await fetch(
@@ -332,7 +416,6 @@ export default function HomeScreen() {
             styles.webCalendarContainer,
             { top: calendarPosition.top, left: calendarPosition.left },
           ]}
-
         >
           <DatePicker
             selected={date}
@@ -397,7 +480,7 @@ export default function HomeScreen() {
             <View style={styles.mapContainer}>
               <View style={styles.resultsContainer}>
                 <FlatList
-                  data={detailedSearchResults}
+                  data={detailedSearchResults.slice(0, 3)}
                   renderItem={({ item }) => (
                     <View>
                       <AccordionItem
@@ -445,7 +528,7 @@ export default function HomeScreen() {
             <View>
               <View style={styles.mobileResultsContainer}>
                 <FlatList
-                  data={detailedSearchResults}
+                  data={detailedSearchResults.slice(0, 3)}
                   renderItem={({ item }) => (
                     <AccordionItem
                       item={item}
@@ -524,7 +607,10 @@ export default function HomeScreen() {
           <View style={styles.card}>
             <View style={styles.webInputContainer}>
               <View style={styles.locationInputsContainer}>
-                <WebDepartureAutocomplete onSelect={setDeparture} value={departure}/>
+                <WebDepartureAutocomplete
+                  onSelect={setDeparture}
+                  value={departure}
+                />
                 <TouchableOpacity
                   style={styles.swapButton}
                   onPress={swapDepartureArrival}
@@ -538,7 +624,7 @@ export default function HomeScreen() {
                     />
                   </View>
                 </TouchableOpacity>
-               <WebArrivalAutocomplete onSelect={setArrival} value={arrival}/>
+                <WebArrivalAutocomplete onSelect={setArrival} value={arrival} />
               </View>
 
               <View style={styles.row}>
@@ -589,22 +675,15 @@ export default function HomeScreen() {
           <Text style={styles.headerTitle}>経路検索</Text>
         </View>
         <ScrollView contentContainerStyle={styles.container}>
-
           <View style={styles.card}>
-          <DepartureAutocomplete
-            onSelect={setDeparture}
-            value={departure}
-          />
+            <DepartureAutocomplete onSelect={setDeparture} value={departure} />
             <TouchableOpacity
               style={styles.swapButton}
               onPress={swapDepartureArrival}
             >
               <Ionicons name="swap-vertical" size={24} color="#007AFF" />
             </TouchableOpacity>
-            <ArrivalAutocomplete 
-            onSelect={setArrival}
-            value={arrival}
-          />
+            <ArrivalAutocomplete onSelect={setArrival} value={arrival} />
             <View style={styles.row}>
               <View style={[styles.inputWrapper]}>
                 <TouchableOpacity
