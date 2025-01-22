@@ -77,7 +77,7 @@ const AccordionItem: React.FC<{
   onToggle: () => void;
   onSelect?: () => void;
   onShare?: () => void;
-}> = ({ item, expanded, onToggle, onSelect, onShare }) => {
+}> = ({ item, expanded, onToggle }) => {
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [isVideoModalVisible, setIsVideoModalVisible] = useState(false);
@@ -120,11 +120,8 @@ const AccordionItem: React.FC<{
             {item.segments[0].from}
             {isTransferRoute ? (
               <>
-                <Text style={styles.transferText}>
-                  {" "}
-                  → {item.transferStation} →{" "}
-                </Text>
-                {item.segments[1].to}
+                <Text style={styles.transferText}> →</Text>
+                {item.segments[item.segments.length - 1].to}
               </>
             ) : (
               <> → {item.segments[0].to}</>
