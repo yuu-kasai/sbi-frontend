@@ -58,7 +58,7 @@ interface WalkingSegment {
   from_station: Station;
   to_station: Station;
   duration_minutes: number;
-  video?: string;  // videoプロパティを追加
+  video?: string;
 }
 
 interface RouteSegment {
@@ -113,7 +113,7 @@ interface TransferRoute {
     stops: Stop[];
   };
   walking: {
-    video?: string  ;
+    video?: string;
     from_station: {
       name: string;
       stop_id: string;
@@ -289,13 +289,16 @@ export default function HomeScreen() {
       const transformApiResponse = (
         apiResponse: any
       ): DetailedSearchResult[] => {
+        // noritugi ari
         if (apiResponse.routes[0].first_leg) {
+          //if toho ari
+          //if toho douga ari
           return apiResponse.routes.map(
             (route: TransferRoute, index: number) => {
               const firstLeg = route.first_leg;
               const secondLeg = route.second_leg;
               const walking = route.walking;
-
+              // walking.video = "harbis_osaka.mp4"
               // 経路情報を作成（バス→徒歩→バスの3区間）
               const segments: RouteSegment[] = [
                 {
@@ -336,7 +339,7 @@ export default function HomeScreen() {
                   ),
                   from_location: walking.from_station.location,
                   to_location: walking.to_station.location,
-                  videoUrl: walking.video // ここを修正
+                  videoUrl: walking.video,
                 },
                 {
                   id: `${index + 1}-3`,
@@ -417,7 +420,7 @@ export default function HomeScreen() {
       const params = new URLSearchParams({
         departure_place: departure.trim(),
         arrival_place: arrival.trim(),
-        date: date.toISOString().split("T")[0], // YYYY-MM-DD形式
+        date: date.toISOString().split("T")[0],
         time: date.toLocaleTimeString("ja-JP", {
           hour: "2-digit",
           minute: "2-digit",
@@ -430,7 +433,6 @@ export default function HomeScreen() {
         `${API_BASE_URL}/backend/route?${params.toString()}`
       );
       const data = await response.json();
-      console.log(data.routes[0].walking.video)
 
       if (data.status === "success") {
         const transformedResults = transformApiResponse(data);

@@ -162,7 +162,6 @@ const AccordionItem: React.FC<{
     index: number,
     isMobile: boolean
   ) => {
-    console.log(item.segments[1].videoUrl)
     return (
       <View key={segment.id} style={styles.segmentContainer}>
         <View style={styles.timeLineContainer}>
