@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Platform,
   Text,
+  Alert,
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,7 +22,22 @@ const VideoModal: React.FC<VideoModalProps> = ({
   onClose,
   videoSource,
 }) => {
+  const [error, setError] = useState<string | null>(null);
+
+  // 動画URLを正規化する関数
+  const normalizeVideoUrl = (url: string) => {
+    url = "../../assets/videos/" + url
+    return url;
+  };
+
+  const handleError = (error: any) => {
+    console.error('Video playback error:', error);
+    setError('動画の読み込みに失敗しました。');
+  };
+
   const renderVideoPlayer = () => {
+    const normalizedVideoSource = normalizeVideoUrl(videoSource);
+
     if (Platform.OS === "web") {
       return (
         <video
@@ -32,15 +48,17 @@ const VideoModal: React.FC<VideoModalProps> = ({
             maxHeight: "80vh",
             backgroundColor: "#000",
           }}
-          src={videoSource}
+          src={normalizedVideoSource}
+          onError={(e) => handleError(e)}
         >
+          <source src={normalizedVideoSource} type="video/mp4" />
           お使いのブラウザは動画再生に対応していません。
         </video>
       );
     } else {
       return (
         <Video
-          source={{ uri: videoSource }}
+          source={{ uri: normalizedVideoSource }}
           rate={1.0}
           volume={1.0}
           isMuted={false}
@@ -48,6 +66,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
           shouldPlay={true}
           useNativeControls
           style={styles.video}
+          onError={(error) => handleError(error)}
         />
       );
     }
@@ -65,7 +84,15 @@ const VideoModal: React.FC<VideoModalProps> = ({
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Ionicons name="close" size={24} color="#fff" />
           </TouchableOpacity>
-          <View style={styles.videoContainer}>{renderVideoPlayer()}</View>
+          <View style={styles.videoContainer}>
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : (
+              renderVideoPlayer()
+            )}
+          </View>
         </View>
       </View>
     </Modal>
@@ -102,6 +129,15 @@ const styles = StyleSheet.create({
   video: {
     width: "100%",
     height: "100%",
+  },
+  errorContainer: {
+    padding: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 10,
+  },
+  errorText: {
+    color: "red",
+    textAlign: "center",
   },
 });
 

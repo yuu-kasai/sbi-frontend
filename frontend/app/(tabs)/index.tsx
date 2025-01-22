@@ -58,6 +58,7 @@ interface WalkingSegment {
   from_station: Station;
   to_station: Station;
   duration_minutes: number;
+  video?: string;  // videoプロパティを追加
 }
 
 interface RouteSegment {
@@ -112,6 +113,7 @@ interface TransferRoute {
     stops: Stop[];
   };
   walking: {
+    video?: string  ;
     from_station: {
       name: string;
       stop_id: string;
@@ -172,7 +174,6 @@ const fetchSearchResults = async (
 
     // URLの構築
     const url = `${API_BASE_URL}/backend/route?${params.toString()}`;
-    console.log("リクエストURL:", url);
 
     const response = await fetch(url, {
       method: "GET",
@@ -180,6 +181,7 @@ const fetchSearchResults = async (
         Accept: "application/json",
       },
     });
+
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -198,7 +200,7 @@ const fetchSearchResults = async (
     }
 
     const data = await response.json();
-    console.log("レスポンスデータ:", data); // デバッグ用
+    console.log("レスポンスデータ:", data);
     return data;
   } catch (error) {
     console.error("APIリクエストエラー:", error);
@@ -265,6 +267,7 @@ export default function HomeScreen() {
     }
     setShowDatePicker((prevState) => !prevState);
   }, []);
+  
 
   // handleSearch 関数の改善
   const handleSearch = async () => {
@@ -317,8 +320,8 @@ export default function HomeScreen() {
                 },
                 {
                   id: `${index + 1}-2`,
-                  from: firstLeg.arrival.place, // 修正
-                  to: secondLeg.departure.place, // 修正
+                  from: firstLeg.arrival.place,
+                  to: secondLeg.departure.place,
                   type: "walk",
                   duration: `${walking.duration_minutes}分`,
                   distance: `約${(walking.duration_minutes * 80).toFixed(0)}m`,
@@ -333,6 +336,7 @@ export default function HomeScreen() {
                   ),
                   from_location: walking.from_station.location,
                   to_location: walking.to_station.location,
+                  videoUrl: walking.video // ここを修正
                 },
                 {
                   id: `${index + 1}-3`,
@@ -420,13 +424,13 @@ export default function HomeScreen() {
         }),
         is_arrival_time: isArrivalTime.toString(),
       });
-      console.log(transformApiResponse);
 
       // APIリクエスト
       const response = await fetch(
         `${API_BASE_URL}/backend/route?${params.toString()}`
       );
       const data = await response.json();
+      console.log(data.routes[0].walking.video)
 
       if (data.status === "success") {
         const transformedResults = transformApiResponse(data);
@@ -489,7 +493,7 @@ export default function HomeScreen() {
 
   const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
 
-  console.log(detailedSearchResults);
+  // console.log(detailedSearchResults);
   // console.log(GOOGLE_MAPS_API_KEY);
 
   const isMobile = Platform.OS === "web" && window.innerWidth <= 768;

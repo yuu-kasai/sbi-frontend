@@ -12,6 +12,17 @@ import RouteMapModal from "./RouteMapModal";
 import VideoModal from "@/components/VideoModal";
 import MobileVideoModal from "./MobileVideoModal";
 
+interface Location {
+  stop_lat: number;
+  stop_lon: number;
+}
+
+interface Station {
+  name: string;
+  stop_id: string;
+  location: Location;
+}
+
 interface Stop {
   sequence: number;
   time: string;
@@ -27,15 +38,23 @@ interface RouteSegment {
   id: string;
   from: string;
   to: string;
-  type: "walk" | "train" | "bus";
+  type: "walk" | "bus";
   duration: string;
   distance?: string;
   price: string;
-  lineName?: string;
   departureTime?: string;
   arrivalTime?: string;
-  platform?: string;
   stops?: Stop[];
+  from_location?: Location;
+  to_location?: Location;
+  videoUrl?: string;
+}
+
+interface Walking {
+  from_station: Station;
+  to_station: Station;
+  duration_minutes: number;
+  video?: string;
 }
 
 interface DetailedSearchResult {
@@ -45,25 +64,21 @@ interface DetailedSearchResult {
   departureTime: string;
   arrivalTime: string;
   segments: RouteSegment[];
-  videoUrl?: string;
+  walking?: Walking;
   transferStation?: string;
 }
 
-const getSegmentIcon = (type: "walk" | "train" | "bus") => {
+const getSegmentIcon = (type: "walk" | "bus") => {
   switch (type) {
     case "walk":
       return <Ionicons name="walk-outline" size={24} color="#007AFF" />;
-    case "train":
-      return <Ionicons name="train-outline" size={24} color="#007AFF" />;
     case "bus":
       return <Ionicons name="bus-outline" size={24} color="#007AFF" />;
   }
 };
 
-const getSegmentTypeName = (type: "train" | "bus" | "walk") => {
+const getSegmentTypeName = (type: "bus" | "walk") => {
   switch (type) {
-    case "train":
-      return "電車";
     case "bus":
       return "バス";
     case "walk":
@@ -75,8 +90,6 @@ const AccordionItem: React.FC<{
   item: DetailedSearchResult;
   expanded: boolean;
   onToggle: () => void;
-  onSelect?: () => void;
-  onShare?: () => void;
 }> = ({ item, expanded, onToggle }) => {
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
@@ -89,7 +102,6 @@ const AccordionItem: React.FC<{
   const isTransferRoute = item.segments.length > 1;
 
   const handleOpenVideo = (videoUrl: string) => {
-    if (!videoUrl) return;
     setSelectedVideo(videoUrl);
     setIsVideoModalVisible(true);
   };
@@ -108,6 +120,7 @@ const AccordionItem: React.FC<{
     setSelectedSegment(segment);
     setIsMapVisible(true);
   };
+
 
   const renderHeader = () => (
     <TouchableOpacity onPress={onToggle} style={styles.accordionHeader}>
@@ -149,6 +162,7 @@ const AccordionItem: React.FC<{
     index: number,
     isMobile: boolean
   ) => {
+    console.log(item.segments[1].videoUrl)
     return (
       <View key={segment.id} style={styles.segmentContainer}>
         <View style={styles.timeLineContainer}>
@@ -179,20 +193,12 @@ const AccordionItem: React.FC<{
                   距離: {segment.distance}
                 </Text>
               )}
-              {segment.lineName && (
-                <Text style={styles.lineText}>路線: {segment.lineName}</Text>
-              )}
-              {segment.platform && (
-                <Text style={styles.platformText}>{segment.platform}</Text>
-              )}
 
-              {renderStops(segment.stops)}
-
-              {item.videoUrl && segment.type === "walk" && isWeb && (
+              {segment.type === "walk" && segment.videoUrl && (
                 <TouchableOpacity
                   style={styles.videoButton}
-                  onPress={() => handleOpenVideo(item.videoUrl!)}
-                >
+                  onPress={() => handleOpenVideo(segment.videoUrl!)}
+                  >
                   <Ionicons
                     name="play-circle-outline"
                     size={24}
@@ -214,19 +220,6 @@ const AccordionItem: React.FC<{
               <Ionicons name="navigate-outline" size={20} color="white" />
               <Text style={styles.buttonText}>地図表示</Text>
             </TouchableOpacity>
-            {item.videoUrl && segment.type === "walk" && (
-              <TouchableOpacity
-                style={styles.videoButton}
-                onPress={() => handleOpenVideo(item.videoUrl!)}
-              >
-                <Ionicons
-                  name="play-circle-outline"
-                  size={24}
-                  color="#007AFF"
-                />
-                <Text style={styles.videoButtonText}>ルート動画を再生</Text>
-              </TouchableOpacity>
-            )}
           </View>
         )}
       </View>
@@ -293,7 +286,7 @@ const styles = StyleSheet.create({
     }),
   },
   collapsedItem: {
-    height: 100, // 乗り換え情報表示のため高さを調整
+    height: 100,
   },
   accordionHeader: {
     flexDirection: "row",
