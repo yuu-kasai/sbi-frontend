@@ -43,19 +43,37 @@ interface Stop {
   };
 }
 
+interface Location {
+  stop_lat: number;
+  stop_lon: number;
+}
+
+interface Station {
+  name: string;
+  stop_id: string;
+  location: Location;
+}
+
+interface WalkingSegment {
+  from_station: Station;
+  to_station: Station;
+  duration_minutes: number;
+}
+
 interface RouteSegment {
   id: string;
   from: string;
   to: string;
-  type: "walk" | "train" | "bus";
+  type: "walk" | "bus";
   duration: string;
   distance?: string;
   price: string;
-  lineName?: string;
   departureTime?: string;
   arrivalTime?: string;
   videoUrl?: string;
   stops?: Stop[];
+  from_location?: Location; // 追加
+  to_location?: Location; // 追加
 }
 
 interface DetailedSearchResult {
@@ -65,7 +83,65 @@ interface DetailedSearchResult {
   departureTime: string;
   arrivalTime: string;
   segments: RouteSegment[];
-  videoUrl?: string;
+  walking?: WalkingSegment;
+}
+
+interface TransferRoute {
+  first_leg: {
+    departure: {
+      time: string;
+      place: string;
+    };
+    arrival: {
+      time: string;
+      place: string;
+    };
+    duration: string;
+    stops: Stop[];
+  };
+  second_leg: {
+    departure: {
+      time: string;
+      place: string;
+    };
+    arrival: {
+      time: string;
+      place: string;
+    };
+    duration: string;
+    stops: Stop[];
+  };
+  walking: {
+    from_station: {
+      name: string;
+      stop_id: string;
+      location: {
+        stop_lat: number;
+        stop_lon: number;
+      };
+    };
+    to_station: {
+      name: string;
+      stop_id: string;
+      location: {
+        stop_lat: number;
+        stop_lon: number;
+      };
+    };
+    duration_minutes: number;
+  };
+  transfer_station: string;
+  total_fare: {
+    price: number;
+    currency: string;
+    payment_method: string;
+    breakdown: {
+      price: number;
+      currency: string;
+      payment_method: string;
+    }[];
+  };
+  duration: string;
 }
 
 declare global {
@@ -210,34 +286,127 @@ export default function HomeScreen() {
       const transformApiResponse = (
         apiResponse: any
       ): DetailedSearchResult[] => {
-        return apiResponse.routes.map((route: any, index: number) => {
-          // 時間をHH:mm形式に変換
-          const departureTime = route.departure.time.substring(0, 5);
-          const arrivalTime = route.arrival.time.substring(0, 5);
+        if (apiResponse.routes[0].first_leg) {
+          return apiResponse.routes.map(
+            (route: TransferRoute, index: number) => {
+              const firstLeg = route.first_leg;
+              const secondLeg = route.second_leg;
+              const walking = route.walking;
 
-          // 経路情報を作成
-          const segment: RouteSegment = {
-            id: `${index + 1}-1`,
-            from: route.departure.place,
-            to: route.arrival.place,
-            type: "bus", // デフォルトはバスとして設定
-            duration: route.duration.replace("0:", ""), // "0:26:00" → "26分" の形式に変換
-            price: route.fare.price.toString(),
-            departureTime: departureTime,
-            arrivalTime: arrivalTime,
-            stops: route.stops, // 停留所データを追加
-          };
+              // 経路情報を作成（バス→徒歩→バスの3区間）
+              const segments: RouteSegment[] = [
+                {
+                  id: `${index + 1}-1`,
+                  from: firstLeg.departure.place,
+                  to: firstLeg.arrival.place,
+                  type: "bus",
+                  duration: firstLeg.duration,
+                  price: route.total_fare.breakdown[0].price.toString(),
+                  departureTime: firstLeg.departure.time.substring(
+                    0,
+                    firstLeg.departure.time.lastIndexOf(":")
+                  ),
+                  arrivalTime: firstLeg.arrival.time.substring(
+                    0,
+                    firstLeg.arrival.time.lastIndexOf(":")
+                  ),
+                  stops: firstLeg.stops,
+                  from_location: firstLeg.stops[0].location,
+                  to_location:
+                    firstLeg.stops[firstLeg.stops.length - 1].location,
+                },
+                {
+                  id: `${index + 1}-2`,
+                  from: firstLeg.arrival.place, // 修正
+                  to: secondLeg.departure.place, // 修正
+                  type: "walk",
+                  duration: `${walking.duration_minutes}分`,
+                  distance: `約${(walking.duration_minutes * 80).toFixed(0)}m`,
+                  price: "0",
+                  departureTime: firstLeg.arrival.time.substring(
+                    0,
+                    firstLeg.arrival.time.lastIndexOf(":")
+                  ),
+                  arrivalTime: secondLeg.departure.time.substring(
+                    0,
+                    secondLeg.departure.time.lastIndexOf(":")
+                  ),
+                  from_location: walking.from_station.location,
+                  to_location: walking.to_station.location,
+                },
+                {
+                  id: `${index + 1}-3`,
+                  from: secondLeg.departure.place,
+                  to: secondLeg.arrival.place,
+                  type: "bus",
+                  duration: secondLeg.duration,
+                  price: route.total_fare.breakdown[1]?.price.toString() || "0",
+                  departureTime: secondLeg.departure.time.substring(
+                    0,
+                    secondLeg.departure.time.lastIndexOf(":")
+                  ),
+                  arrivalTime: secondLeg.arrival.time.substring(
+                    0,
+                    secondLeg.arrival.time.lastIndexOf(":")
+                  ),
+                  stops: secondLeg.stops,
+                  from_location: secondLeg.stops[0].location,
+                  to_location:
+                    secondLeg.stops[secondLeg.stops.length - 1].location,
+                },
+              ];
 
-          // 検索結果オブジェクトを作成
-          return {
-            id: (index + 1).toString(),
-            totalDuration: route.duration.replace("0:", ""),
-            totalPrice: route.fare.price.toString(),
-            departureTime: departureTime,
-            arrivalTime: arrivalTime,
-            segments: [segment],
-          };
-        });
+              return {
+                id: (index + 1).toString(),
+                totalDuration: route.duration,
+                totalPrice: route.total_fare.price.toString(),
+                departureTime: firstLeg.departure.time.substring(
+                  0,
+                  firstLeg.departure.time.lastIndexOf(":")
+                ),
+                arrivalTime: secondLeg.arrival.time.substring(
+                  0,
+                  secondLeg.arrival.time.lastIndexOf(":")
+                ),
+                segments: segments,
+                transferStation: route.transfer_station,
+              };
+            }
+          );
+        } else {
+          // 直通経路の場合（既存の実装）
+          return apiResponse.routes.map((route: any, index: number) => {
+            const departureTime = route.departure.time.substring(
+              0,
+              route.departure.time.lastIndexOf(":")
+            );
+            const arrivalTime = route.arrival.time.substring(
+              0,
+              route.arrival.time.lastIndexOf(":")
+            );
+
+            const segment: RouteSegment = {
+              id: `${index + 1}-1`,
+              from: route.departure.place,
+              to: route.arrival.place,
+              type: "bus",
+              duration: route.duration.replace("0:", ""),
+              price: route.fare.price.toString(),
+              departureTime: departureTime,
+              arrivalTime: arrivalTime,
+              stops: route.stops,
+            };
+
+            return {
+              id: (index + 1).toString(),
+              totalDuration: route.duration.replace("0:", ""),
+              totalPrice: route.fare.price.toString(),
+              departureTime: departureTime,
+              arrivalTime: arrivalTime,
+              segments: [segment],
+            };
+          });
+        }
       };
 
       // クエリパラメータの構築
@@ -251,6 +420,7 @@ export default function HomeScreen() {
         }),
         is_arrival_time: isArrivalTime.toString(),
       });
+      console.log(transformApiResponse);
 
       // APIリクエスト
       const response = await fetch(
@@ -332,7 +502,6 @@ export default function HomeScreen() {
             styles.webCalendarContainer,
             { top: calendarPosition.top, left: calendarPosition.left },
           ]}
-
         >
           <DatePicker
             selected={date}
@@ -391,13 +560,47 @@ export default function HomeScreen() {
 
     if (detailedSearchResults.length > 0) {
       if (!isMobile) {
+        const firstResult = detailedSearchResults[0];
+
+        // first_leg（最初のバス区間）の処理
+        const firstLegStops = firstResult.segments[0]?.stops || [];
+
+        // second_leg（2番目のバス区間）の処理
+        const secondLegStops = firstResult.segments[2]?.stops || [];
+
+        // walking（徒歩区間）の処理
+        const walkingSegment = firstResult.segments[1];
+        const walkingPoints =
+          walkingSegment?.type === "walk"
+            ? [
+                {
+                  lat: walkingSegment.from_location?.stop_lat || 0,
+                  lng: walkingSegment.from_location?.stop_lon || 0,
+                },
+                {
+                  lat: walkingSegment.to_location?.stop_lat || 0,
+                  lng: walkingSegment.to_location?.stop_lon || 0,
+                },
+              ].filter((point) => point.lat !== 0 && point.lng !== 0)
+            : [];
+
+        const firstLegPoints = firstLegStops.map((stop) => ({
+          lat: stop.location.stop_lat,
+          lng: stop.location.stop_lon,
+        }));
+
+        const secondLegPoints = secondLegStops.map((stop) => ({
+          lat: stop.location.stop_lat,
+          lng: stop.location.stop_lon,
+        }));
+
         return (
           <>
             <Text style={styles.resultsTitle}>検索結果</Text>
             <View style={styles.mapContainer}>
               <View style={styles.resultsContainer}>
                 <FlatList
-                  data={detailedSearchResults}
+                  data={detailedSearchResults.slice(0, 3)}
                   renderItem={({ item }) => (
                     <View>
                       <AccordionItem
@@ -417,35 +620,143 @@ export default function HomeScreen() {
                     height: "1500px",
                   }}
                   center={{
-                    lat: flightPlanCoordinates[0]?.lat || 33.59519,
-                    lng: flightPlanCoordinates[0]?.lng || 134.21479,
+                    lat: firstLegPoints[0]?.lat || 34.003572, // 小松島の緯度
+                    lng: firstLegPoints[0]?.lng || 134.572368, // 小松島の経度
                   }}
-                  zoom={15}
+                  zoom={7}
                 >
-                  <Polyline
-                    path={flightPlanCoordinates}
-                    options={{
-                      strokeColor: "#FF0000",
-                      strokeOpacity: 1.0,
-                      strokeWeight: 2,
-                      geodesic: true,
-                    }}
-                  />
-                  <Marker position={DeparturePlace} />
-                  <Marker position={ArrivalPlace} />
+                  {/* 最初のバス区間 */}
+                  {firstLegPoints.length > 0 && (
+                    <Polyline
+                      path={firstLegPoints}
+                      options={{
+                        strokeColor: "#0088FF",
+                        strokeOpacity: 1.0,
+                        strokeWeight: 3,
+                        geodesic: true,
+                      }}
+                    />
+                  )}
+
+                  {/* 徒歩区間 */}
+                  {/* {walkingPoints.length === 2 && (
+                    <Polyline
+                      path={walkingPoints}
+                      options={{
+                        strokeColor: "#00FF00",
+                        strokeOpacity: 0.8,
+                        strokeWeight: 3,
+                        geodesic: true,
+                        icons: [
+                          {
+                            icon: {
+                              path: 0, // 0 は CIRCLE に相当
+                              fillOpacity: 1,
+                              scale: 2,
+                            },
+                            offset: "0",
+                            repeat: "10px",
+                          },
+                        ],
+                      }}
+                    />
+                  )} */}
+
+                  {/* 次のバス区間 */}
+                  {secondLegPoints.length > 0 && (
+                    <Polyline
+                      path={secondLegPoints}
+                      options={{
+                        strokeColor: "#0088FF",
+                        strokeOpacity: 1.0,
+                        strokeWeight: 3,
+                        geodesic: true,
+                      }}
+                    />
+                  )}
+
+                  {/* バス停のマーカー */}
+                  {firstLegStops.length > 0 && (
+                    <Marker
+                      key={`first-start-${firstLegStops[0].stop_id}`}
+                      position={{
+                        lat: firstLegStops[0].location.stop_lat,
+                        lng: firstLegStops[0].location.stop_lon,
+                      }}
+                      title={firstLegStops[0].stop_name}
+                    />
+                  )}
+
+                  {/* 乗り継ぎがある場合の第1区間終点と第2区間始点 */}
+                  {secondLegStops.length > 0 ? (
+                    <>
+                      <Marker
+                        key={`first-end-${firstLegStops[firstLegStops.length - 1].stop_id}`}
+                        position={{
+                          lat: firstLegStops[firstLegStops.length - 1].location
+                            .stop_lat,
+                          lng: firstLegStops[firstLegStops.length - 1].location
+                            .stop_lon,
+                        }}
+                        title={
+                          firstLegStops[firstLegStops.length - 1].stop_name
+                        }
+                      />
+                      <Marker
+                        key={`second-start-${secondLegStops[0].stop_id}`}
+                        position={{
+                          lat: secondLegStops[0].location.stop_lat,
+                          lng: secondLegStops[0].location.stop_lon,
+                        }}
+                        title={secondLegStops[0].stop_name}
+                      />
+                    </>
+                  ) : null}
+
+                  {/* 最終目的地のマーカー */}
+                  {secondLegStops.length > 0 ? (
+                    <Marker
+                      key={`second-end-${secondLegStops[secondLegStops.length - 1].stop_id}`}
+                      position={{
+                        lat: secondLegStops[secondLegStops.length - 1].location
+                          .stop_lat,
+                        lng: secondLegStops[secondLegStops.length - 1].location
+                          .stop_lon,
+                      }}
+                      title={
+                        secondLegStops[secondLegStops.length - 1].stop_name
+                      }
+                    />
+                  ) : (
+                    firstLegStops.length > 0 && (
+                      <Marker
+                        key={`first-end-${firstLegStops[firstLegStops.length - 1].stop_id}`}
+                        position={{
+                          lat: firstLegStops[firstLegStops.length - 1].location
+                            .stop_lat,
+                          lng: firstLegStops[firstLegStops.length - 1].location
+                            .stop_lon,
+                        }}
+                        title={
+                          firstLegStops[firstLegStops.length - 1].stop_name
+                        }
+                      />
+                    )
+                  )}
                 </GoogleMap>
               </LoadScript>
             </View>
           </>
         );
       } else {
+        // モバイル表示（変更なし）
         return (
           <>
             <Text style={styles.resultsTitle}>検索結果</Text>
             <View>
               <View style={styles.mobileResultsContainer}>
                 <FlatList
-                  data={detailedSearchResults}
+                  data={detailedSearchResults.slice(0, 3)}
                   renderItem={({ item }) => (
                     <AccordionItem
                       item={item}
@@ -461,6 +772,7 @@ export default function HomeScreen() {
         );
       }
     }
+    return null;
   };
 
   const renderTimePicker = () => {
@@ -524,7 +836,10 @@ export default function HomeScreen() {
           <View style={styles.card}>
             <View style={styles.webInputContainer}>
               <View style={styles.locationInputsContainer}>
-                <WebDepartureAutocomplete onSelect={setDeparture} value={departure}/>
+                <WebDepartureAutocomplete
+                  onSelect={setDeparture}
+                  value={departure}
+                />
                 <TouchableOpacity
                   style={styles.swapButton}
                   onPress={swapDepartureArrival}
@@ -538,7 +853,7 @@ export default function HomeScreen() {
                     />
                   </View>
                 </TouchableOpacity>
-               <WebArrivalAutocomplete onSelect={setArrival} value={arrival}/>
+                <WebArrivalAutocomplete onSelect={setArrival} value={arrival} />
               </View>
 
               <View style={styles.row}>
@@ -589,22 +904,15 @@ export default function HomeScreen() {
           <Text style={styles.headerTitle}>経路検索</Text>
         </View>
         <ScrollView contentContainerStyle={styles.container}>
-
           <View style={styles.card}>
-          <DepartureAutocomplete
-            onSelect={setDeparture}
-            value={departure}
-          />
+            <DepartureAutocomplete onSelect={setDeparture} value={departure} />
             <TouchableOpacity
               style={styles.swapButton}
               onPress={swapDepartureArrival}
             >
               <Ionicons name="swap-vertical" size={24} color="#007AFF" />
             </TouchableOpacity>
-            <ArrivalAutocomplete 
-            onSelect={setArrival}
-            value={arrival}
-          />
+            <ArrivalAutocomplete onSelect={setArrival} value={arrival} />
             <View style={styles.row}>
               <View style={[styles.inputWrapper]}>
                 <TouchableOpacity

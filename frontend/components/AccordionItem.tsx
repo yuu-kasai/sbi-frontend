@@ -3,7 +3,6 @@ import {
   View,
   TouchableOpacity,
   Text,
-  Animated,
   StyleSheet,
   Platform,
 } from "react-native";
@@ -12,6 +11,17 @@ import "react-datepicker/dist/react-datepicker.css";
 import RouteMapModal from "./RouteMapModal";
 import VideoModal from "@/components/VideoModal";
 import MobileVideoModal from "./MobileVideoModal";
+
+interface Stop {
+  sequence: number;
+  time: string;
+  stop_id: string;
+  stop_name: string;
+  location: {
+    stop_lat: number;
+    stop_lon: number;
+  };
+}
 
 interface RouteSegment {
   id: string;
@@ -25,6 +35,7 @@ interface RouteSegment {
   departureTime?: string;
   arrivalTime?: string;
   platform?: string;
+  stops?: Stop[];
 }
 
 interface DetailedSearchResult {
@@ -35,6 +46,7 @@ interface DetailedSearchResult {
   arrivalTime: string;
   segments: RouteSegment[];
   videoUrl?: string;
+  transferStation?: string;
 }
 
 const getSegmentIcon = (type: "walk" | "train" | "bus") => {
@@ -65,7 +77,7 @@ const AccordionItem: React.FC<{
   onToggle: () => void;
   onSelect?: () => void;
   onShare?: () => void;
-}> = ({ item, expanded, onToggle, onSelect, onShare }) => {
+}> = ({ item, expanded, onToggle }) => {
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [isVideoModalVisible, setIsVideoModalVisible] = useState(false);
@@ -74,13 +86,10 @@ const AccordionItem: React.FC<{
   );
 
   const isWeb = Platform.OS === "web";
+  const isTransferRoute = item.segments.length > 1;
 
   const handleOpenVideo = (videoUrl: string) => {
-    console.log("Opening video with URL:", videoUrl);
-    if (!videoUrl) {
-      console.warn("No video URL provided");
-      return;
-    }
+    if (!videoUrl) return;
     setSelectedVideo(videoUrl);
     setIsVideoModalVisible(true);
   };
@@ -106,6 +115,19 @@ const AccordionItem: React.FC<{
         <Text style={styles.headerText}>
           {item.departureTime} → {item.arrivalTime}
         </Text>
+        <View style={styles.routeOverview}>
+          <Text>
+            {item.segments[0].from}
+            {isTransferRoute ? (
+              <>
+                <Text style={styles.transferText}> →</Text>
+                {item.segments[item.segments.length - 1].to}
+              </>
+            ) : (
+              <> → {item.segments[0].to}</>
+            )}
+          </Text>
+        </View>
         <Text style={styles.subHeaderText}>
           所要時間: {item.totalDuration} / 料金: ¥{item.totalPrice}
         </Text>
@@ -118,7 +140,15 @@ const AccordionItem: React.FC<{
     </TouchableOpacity>
   );
 
-  const renderSegment = (segment: RouteSegment, isMobile: boolean) => {
+  const renderStops = (stops?: Stop[]) => {
+    if (!stops || stops.length === 0) return null;
+  };
+
+  const renderSegment = (
+    segment: RouteSegment,
+    index: number,
+    isMobile: boolean
+  ) => {
     return (
       <View key={segment.id} style={styles.segmentContainer}>
         <View style={styles.timeLineContainer}>
@@ -143,6 +173,7 @@ const AccordionItem: React.FC<{
               <Text style={styles.durationText}>
                 所要時間: {segment.duration}
               </Text>
+              <Text style={styles.fareText}>運賃: ¥{segment.price}</Text>
               {segment.distance && (
                 <Text style={styles.distanceText}>
                   距離: {segment.distance}
@@ -154,7 +185,10 @@ const AccordionItem: React.FC<{
               {segment.platform && (
                 <Text style={styles.platformText}>{segment.platform}</Text>
               )}
-              {item.videoUrl && segment.type === "walk" && isWeb &&(
+
+              {renderStops(segment.stops)}
+
+              {item.videoUrl && segment.type === "walk" && isWeb && (
                 <TouchableOpacity
                   style={styles.videoButton}
                   onPress={() => handleOpenVideo(item.videoUrl!)}
@@ -205,8 +239,8 @@ const AccordionItem: React.FC<{
         {renderHeader()}
         {expanded && (
           <View style={styles.accordionBody}>
-            {item.segments.map((segment) =>
-              renderSegment(segment, Platform.OS !== "web")
+            {item.segments.map((segment, index) =>
+              renderSegment(segment, index, Platform.OS !== "web")
             )}
           </View>
         )}
@@ -253,10 +287,13 @@ const styles = StyleSheet.create({
       android: {
         elevation: 2,
       },
+      web: {
+        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+      },
     }),
   },
   collapsedItem: {
-    height: 80,
+    height: 100, // 乗り換え情報表示のため高さを調整
   },
   accordionHeader: {
     flexDirection: "row",
@@ -264,11 +301,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     backgroundColor: "#f8f8f8",
-    height: 80,
+    minHeight: 100,
   },
   headerText: {
     fontSize: 16,
     fontWeight: "bold",
+  },
+  routeOverview: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  transferText: {
+    fontWeight: "500",
   },
   subHeaderText: {
     fontSize: 14,
@@ -304,6 +348,20 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e0e0e0",
     paddingBottom: 16,
   },
+  transferInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f9ff",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  transferInfoText: {
+    marginLeft: 8,
+    color: "#007AFF",
+    fontSize: 15,
+    fontWeight: "500",
+  },
   segmentHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -326,6 +384,11 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 2,
   },
+  fareText: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 2,
+  },
   distanceText: {
     fontSize: 14,
     color: "#666",
@@ -341,6 +404,26 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 2,
   },
+  stopsContainer: {
+    marginTop: 8,
+  },
+  stopsTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  stopItem: {
+    flexDirection: "row",
+    marginTop: 4,
+  },
+  stopTime: {
+    width: 50,
+    fontSize: 13,
+    color: "#666",
+  },
+  stopName: {
+    fontSize: 13,
+  },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -350,8 +433,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingRight: 16,
-    paddingLeft: 16,
+    paddingHorizontal: 16,
     borderRadius: 8,
     height: 40,
   },
